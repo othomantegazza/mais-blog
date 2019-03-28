@@ -57,3 +57,61 @@ agr_dat %>%
   theme(axis.text.x = element_text(angle = 270, vjust = .5))
   
 
+
+# Get Shapefile for regions ----------------------------------------
+
+link_istat <- paste0("http://www.istat.it/storage/cartografia/",
+                     "confini_amministrativi/archivio-confini/",
+                     "generalizzati/2016/Limiti_2016_WGS84_g.zip")
+
+
+municip_path <- "data/istat_municipalities"
+
+if(!file.exists(municip_path)) {
+  
+  temp <- tempfile()
+  
+  link_istat %>% 
+    download.file(destfile = temp)
+  
+  temp %>% unzip(exdir = municip_path)
+  rm(temp)
+  
+}
+
+reg_ita <- 
+  paste0("data/istat_municipalities/Limiti_2016_WGS84_g/",
+         "Reg2016_WGS84_g/Reg_2016_WGS84_g.shp") %>% 
+  sf::st_read()
+
+
+
+# merge -------------------------------------------------------------------
+
+agr_dat2 <- 
+  agr_dat %>% 
+  rename(REGIONE = "AreaGeografica") %>% 
+  filter(str_detect(Coltura, "[Mm]ais") |
+           str_detect(Coltura, "[Gg]ranoturco")) %>% 
+  filter(!str_detect(Coltura, "totale"),
+         REGIONE != "ITALIA") %>%
+  filter(anno == max(anno))
+  
+
+prod_ita <- 
+  reg_ita %>% 
+  mutate(REGIONE = REGIONE %>% as.character() %>% toupper(),
+         REGIONE = REGIONE %>% str_replace_all("-", " ")) %>% 
+  left_join(agr_dat2)
+
+# plot shapes -------------------------------------------------------------
+
+library(ggspatial)
+
+prod_ita %>%
+  filter(str_detect(Coltura, "granella")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = Valore)) +
+  scale_fill_viridis_c(trans = "log") +
+  theme_bw()
+
