@@ -28,7 +28,10 @@ prov_ita <-
   paste0("data/istat_municipalities/Limiti_2016_WGS84_g/",
          "CMProv2016_WGS84_g/CMprov2016_WGS84_g.shp") %>% 
   sf::st_read() %>% 
-  janitor::clean_names()
+  janitor::clean_names() %>% 
+  # sometime "provincia" is missing
+  mutate(provincia = case_when(provincia == "-" ~ den_cmpro,
+                               TRUE ~ provincia))
 
 
 # plot shapes -------------------------------------------------------------
@@ -54,22 +57,52 @@ production_tidy <-
   # three methods: "r" "t" "s", why?
   # looks like t are regions
   filter(metodo != "t",
-         provincia != "ITALIA")
+         provincia != "ITALIA") %>% 
+  # fix some manually
+  mutate(provincia = case_when(provincia == "Forlì-Cesena" ~ "Forli'-Cesena",
+                               provincia == "Bolzano/Bozen" ~ "Bolzano",
+                               provincia == "Massa-Carrara" ~ "Massa Carrara",
+                               TRUE ~ provincia)) %>% 
+  # 3 variables as character, why?
+  mutate_at(vars(superficie, produzione_totale, produzione_raccolta), as.integer)
+  
 
 # merge by "provincia
-# no_match <- 
-#   production_tidy %>% 
-#   filter(! provincia %in% prov_ita$provincia) %>% 
-#   pull(provincia)
+no_match <-
+  production_tidy %>%
+  filter(! provincia %in% prov_ita$provincia) #%>%
+  # pull(provincia)
 # 
-# no_match2 <- 
-#   prov_ita %>% 
-#   filter(! provincia %in% production_tidy$provincia) %>% 
-#   pull(provincia)
+no_match2 <-
+  prov_ita %>%
+  filter(! provincia %in% production_tidy$provincia) %>%
+  pull(provincia)
 
-prov
+# merge 
+production_shape <- 
+  production_tidy %>% 
+  left_join(prov_ita)
 
-production_tidy$provincia %in% prov_ita$provincia
-prov_ita$provincia %in% production_tidy$provincia 
+
+# plot --------------------------------------------------------------------
+
+bg <- "grey90"
+
+p <- 
+  production_shape %>%
+  ggplot() +
+  geom_sf(aes(fill = produzione_raccolta),
+          colour = bg,
+          size = .4) +
+  # theme_bw()
+  theme_void() +
+  theme(plot.background = element_rect(fill = bg) , panel.grid = element_line(colour = bg))
+
+p +
+  scale_fill_viridis_c()
+
+p + 
+  scale_fill_viridis_c(trans = "log10")
+
 
 
