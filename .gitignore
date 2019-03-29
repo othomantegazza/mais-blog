@@ -5,6 +5,9 @@
 # data
 data/*
 
+# figures
+figures/*
+
 # helper
 trova-codici-comuni.R
 

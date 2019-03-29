@@ -81,28 +81,59 @@ no_match2 <-
 # merge 
 production_shape <- 
   production_tidy %>% 
-  left_join(prov_ita)
+  full_join(prov_ita)
 
 
 # plot --------------------------------------------------------------------
 
-bg <- "grey90"
+bg <-   "grey90" # "white"
 
 p <- 
   production_shape %>%
   ggplot() +
-  geom_sf(aes(fill = produzione_raccolta),
-          colour = bg,
-          size = .4) +
   # theme_bw()
   theme_void() +
   theme(plot.background = element_rect(fill = bg) , panel.grid = element_line(colour = bg))
 
-p +
-  scale_fill_viridis_c()
+p_fill <- 
+  p +
+  scale_fill_viridis_c(guide = FALSE) 
 
-p + 
+p_log <- 
+  p + 
   scale_fill_viridis_c(trans = "log10")
 
 
+# load regions ------------------------------------------------------------
 
+reg_ita <- 
+  paste0("data/istat_municipalities/Limiti_2016_WGS84_g/",
+         "Reg2016_WGS84_g/Reg_2016_WGS84_g.shp") %>% 
+  sf::st_read()
+
+
+png(filename = "every-border",
+    res = 300,
+    height = 2000, width = 1500)
+p_fill +
+  labs(title = "Show every border") +
+  geom_sf(aes(fill = produzione_raccolta),
+          colour = bg,
+          # size = 0) +
+          size = .3) 
+dev.off()
+
+png(filename = "high-level-border",
+    res = 300,
+    height = 2000, width = 1500)
+p_fill + 
+  labs(title = "Better? Show borders at higher level") +
+  geom_sf(aes(fill = produzione_raccolta),
+          colour = bg,
+          size = 0) +
+  geom_sf(data = reg_ita,
+          fill = NA,
+          colour = bg, 
+          size = .5)
+dev.off()
+ 
