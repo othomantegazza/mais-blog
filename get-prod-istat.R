@@ -10,6 +10,8 @@ istat_path <- "data/mais-prod-istat.Rdata"
 #  they do not provide https
 istat_url <- "http://agri.istat.it/excel/dwplC02aa00000100000130.xls"
 
+# la superficie è in ettari e la produzione è in quintali.
+
 # http://agri.istat.it/excel/dwplC02aa00000100000130.xls
 
 

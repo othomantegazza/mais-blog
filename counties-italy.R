@@ -81,9 +81,16 @@ no_match2 <-
 # merge 
 production_shape <- 
   production_tidy %>% 
-  full_join(prov_ita)
+  full_join(prov_ita) %>% 
+  # shape area in m2? Yes
+  mutate(shape_area = shape_area %>% units::set_units(value = m^2)) %>% 
+  # production is in Quintali, make it kilograms
+  mutate(produzione_raccolta = produzione_raccolta*100 %>% 
+           units::set_units(value = kg)) %>% 
+  # store production per area in new variable
+  mutate(relative_prod = produzione_raccolta/shape_area)
 
-
+production_shape$relative_prod
 # plot --------------------------------------------------------------------
 
 bg <-   "grey90" # "white"
@@ -101,7 +108,8 @@ p_fill <-
 
 p_log <- 
   p + 
-  scale_fill_viridis_c(trans = "log10")
+  scale_fill_viridis_c(trans = "log10",
+                       guide = FALSE)
 
 
 # load regions ------------------------------------------------------------
@@ -112,28 +120,30 @@ reg_ita <-
   sf::st_read()
 
 
-png(filename = "every-border",
+png(filename = "figures/every-border.png",
     res = 300,
     height = 2000, width = 1500)
 p_fill +
+# p_log +
   labs(title = "Show every border") +
-  geom_sf(aes(fill = produzione_raccolta),
+  geom_sf(aes(fill = relative_prod %>% units::drop_units()),
           colour = bg,
           # size = 0) +
           size = .3) 
 dev.off()
 
-png(filename = "high-level-border",
+png(filename = "figures/high-level-border.png",
     res = 300,
     height = 2000, width = 1500)
-p_fill + 
+p_fill +
+# p_log +
   labs(title = "Better? Show borders at higher level") +
-  geom_sf(aes(fill = produzione_raccolta),
+  geom_sf(aes(fill = relative_prod %>% units::drop_units()),
           colour = bg,
           size = 0) +
   geom_sf(data = reg_ita,
           fill = NA,
           colour = bg, 
-          size = .5)
+          size = .3)
 dev.off()
  
