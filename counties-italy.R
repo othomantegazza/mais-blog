@@ -93,7 +93,7 @@ production_shape <-
 production_shape$relative_prod
 # plot --------------------------------------------------------------------
 
-bg <-   "grey90" # "white"
+bg <-  "#F6F6DF" # "grey90" # "white"
 
 p <- 
   production_shape %>%
@@ -125,7 +125,8 @@ png(filename = "figures/every-border.png",
     height = 2000, width = 1500)
 p_fill +
 # p_log +
-  labs(title = "Show every border") +
+  labs(title = "Show every border",
+       caption = "Data from istat.it | Plot by @othomn") +
   geom_sf(aes(fill = relative_prod %>% units::drop_units()),
           colour = bg,
           # size = 0) +
@@ -137,7 +138,8 @@ png(filename = "figures/high-level-border.png",
     height = 2000, width = 1500)
 p_fill +
 # p_log +
-  labs(title = "Better? Show borders at higher level") +
+  labs(title = "Better? Show borders at higher level",
+       caption = "Data from istat.it | Plot by @othomn") +
   geom_sf(aes(fill = relative_prod %>% units::drop_units()),
           colour = bg,
           size = 0) +

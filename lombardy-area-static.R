@@ -191,5 +191,15 @@ p2 <-
   geom_sf(data = prov_ita,
           fill = NA,
           colour = bg, 
-          size = .5)
+          size = .2)
 p2
+
+
+
+# save plot ---------------------------------------------------------------
+
+png(filename = "figures/lombardy-mun-area.png",
+    res = 300,
+    height = 1000, width = 1000)
+p2
+dev.off()
