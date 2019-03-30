@@ -5,6 +5,9 @@
 # data
 data/*
 
+# blog
+blog/*
+
 # figures
 figures/*
 

@@ -67,7 +67,7 @@ lom_mais %>%
        x = "") +
   coord_flip() +
   theme_bw()
-  
+
 
 # aggregate by municipality -----------------------------------------------
 
@@ -116,9 +116,7 @@ lombardy_shapes <-
   # for the joining
   mutate(COMUNE = COMUNE %>%
            as.character() %>% 
-           toupper(),
-         # This is for plot compatibility with openstreetmap
-         geometry = geometry %>% st_transform("+init=epsg:4326"))
+           toupper())
 
 
 
@@ -154,39 +152,44 @@ lom_mais_shape %>%
   geom_sf() +
   coord_sf()
 
-
-# leaflet -----------------------------------------------------------------
-
-# Tokyo Palette, It has green colors,
-# looks good for agricolture ;)
-pal <-
-  scico::scico(n = 100,
-               palette = "tokyo",
-               direction = -1) %>%
-  colorNumeric(NULL,
-               na.color = rgb(0, 0, 0, 0, maxColorValue = 255))#"#E0E0D2")
-
-leaflet() %>% 
-  leaflet() %>% 
-  addProviderTiles(providers$Stamen.TonerBackground) %>%
-  addPolygons(data = lom_mais_shape$geometry,
-              fillColor = pal(lom_mais_shape$mais_dens),
-              # some style, feel free to modify it
-              stroke = TRUE, weight = 2,
-              # fillColor =  "#00BB29", #"#A0CF9A", #"#46AEF9",
-              color = "#5867A6", #"#D9F6FF", #"#95BBC6", #"#2D408F",
-              fillOpacity = 1)
-
 # try static --------------------------------------------------------------
 
-lom_mais_shape %>%
+bg <- "#F6F6DF" #"#EAEA9F" #  "grey90" # "white"
+
+p <- 
+  lom_mais_shape %>%
   # ALL PROJECTIONS HERE!!!! 
   # https://download.osgeo.org/proj/OF90-284.pdf
-  mutate(geometry = geometry %>%
-           sf::st_transform(crs = "+proj=lcc +lat_1=20n +lat_2=60n")) %>% 
+  # mutate(geometry = geometry %>%
+  #          sf::st_transform(crs = "+proj=lcc +lat_1=20n +lat_2=60n")) %>% 
   ggplot() +
   geom_sf(aes(fill = sup_used),
           size = 0) +
-  scale_fill_viridis_c(trans = "log10") +
-  coord_sf()
+  scale_fill_viridis_c(trans = "log10",
+                       guide = FALSE) +
+  coord_sf() +
+  theme_void() +
+  theme(plot.background = element_rect(fill = bg) , panel.grid = element_line(colour = bg))
 
+
+p
+
+# add provinces -----------------------------------------------------------
+
+prov_ita <- 
+  paste0("data/istat_municipalities/Limiti_2016_WGS84_g/",
+         "CMProv2016_WGS84_g/CMprov2016_WGS84_g.shp") %>% 
+  sf::st_read() %>% 
+  janitor::clean_names() %>% 
+  # sometime "provincia" is missing
+  # mutate(provincia = case_when(provincia == "-" ~ den_cmpro,
+  #                              TRUE ~ provincia)) %>% 
+  filter(cod_reg == 3)
+
+p2 <-
+  p + 
+  geom_sf(data = prov_ita,
+          fill = NA,
+          colour = bg, 
+          size = .5)
+p2
