@@ -301,6 +301,59 @@ trail_full %>%
   scale_y_log10()
 
 
+# with ggforce ------------------------------------------------------------
+
+library(ggforce)
+library(ggrepel)
+
+tst <- 
+  trail_full %>% 
+  gather(med_area:med_prod, key = "prod_area", value = "value") %>% 
+  filter(key != 2) %>% 
+  mutate(key = paste(prod_area, key, sep = "_")) %>% 
+  select(-prod_area) %>% 
+  spread(key = key, value = value) 
+
+p <- 
+  tst %>% 
+  ggplot(aes(x = med_area_3,
+             y = med_prod_3)) +
+  geom_link(aes(x = med_area_1,
+                y = med_prod_1,
+                xend = med_area_3, 
+                yend = med_prod_3,
+                alpha = ..index..,
+                size = ..index..),
+            colour = "#263A89") +
+  geom_point(size = 5,
+             colour = "#263A89") +
+  geom_text_repel(aes(label = geo),
+                  colour = "#263A89",
+                  force = 3,
+                  size = 3,
+                  nudge_y = .1) +
+  # geom_text(aes(label = geo),
+  #           colour = "#263A89",
+  #           nudge_y = .1) +
+  scale_y_log10() +
+  scale_x_log10() +
+  scale_alpha_continuous(trans = "sqrt", guide = FALSE) +
+  scale_size_continuous(guide = FALSE) +
+  # lims(y = c(NA, max()))
+  expand_limits(y = c(0, 20000)) +
+  labs(x = "Harvested area [1000 Ha]",
+       y = "Production [1000 t]",
+       title = "Grain Maize and Corn Cob Mix",
+       subtitle = paste0("Production of top 10 countries of the European area\n",
+                  "Trend: 2017 vs. Median of previous 10 years"),
+       caption = "Data: Eurostat | Plot by @othomn") +
+  theme_minimal() +
+  theme(axis.title = element_text(hjust = 1))
+
 # what about shapes? ------------------------------------------------------
 
-  
+png("figures/eu-top10-prod.png",
+    width = 2200, height = 1800,
+    res = 300)  
+p
+dev.off()
