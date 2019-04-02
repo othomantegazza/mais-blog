@@ -165,8 +165,11 @@ p <-
   ggplot() +
   geom_sf(aes(fill = sup_used),
           size = 0) +
-  scale_fill_viridis_c(trans = "log10",
-                       guide = FALSE) +
+  # scale_fill_viridis_c(trans = "log10",
+  #                      guide = FALSE) +
+  # scale_fill_viridis_c(guide = FALSE) +
+  scico::scale_fill_scico(palette = "lajolla", begin = .3,#"bilbao",#"bamako",
+                          guide = FALSE) +
   coord_sf() +
   theme_void() +
   theme(plot.background = element_rect(fill = bg) , panel.grid = element_line(colour = bg))

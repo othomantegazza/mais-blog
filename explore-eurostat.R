@@ -1,5 +1,7 @@
 library(tidyverse)
 library(eurostat)
+library(sf)
+library(lubridate)
 
 
 # Maize area in europe ----------------------------------------------------
@@ -107,15 +109,77 @@ maize_code <-
 
 maize_prod <- 
   maize_code %>% 
-  get_eurostat() 
+  get_eurostat() %>% 
+  mutate_if(.predicate = is.factor, as.character)
 
 
-euro_spatial <- 
-  get_eurostat_geospatial() 
+
+# get euro spatial --------------------------------------------------------
+
+# NUTS --------------------------------------------------------------------
+
+# sp_link <- "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-60m.shp.zip"
+# sp_dest <- "data/eurostat_shp"
+# 
+# temp <- tempfile()
+# 
+# download.file(sp_link, destfile = temp)
+# 
+# unzip(temp, exdir = sp_dest)
+# 
+# list.files(sp_dest)
+# 
+# temp2 <- tempfile()
+# 
+# unzip("data/eurostat_shp/NUTS_BN_60M_2016_3035_LEVL_0.shp.zip",
+#       exdir = "data/eurostat_shp/NUTS_BN_60M_2016_3035_LEVL_0")
+# 
+# 
+# 
+# unzip("data/eurostat_shp/NUTS_BN_60M_2016_3035_LEVL_1.shp.zip",
+#       exdir = "data/eurostat_shp/NUTS_BN_60M_2016_3035_LEVL_1")
+# 
+# euro_spatial <- sf::st_read(paste0("data/eurostat_shp/NUTS_BN_60M_2016_3035_LEVL_1/",
+#                                    "NUTS_BN_60M_2016_3035_LEVL_1.shp"))
+# 
+# euro_spatial %>% label_eurostat_vars()
+
+# euro_spatial <- 
+#   get_eurostat_geospatial(output_class = "sf simple features", nuts_level = 0)
+  # as_tibble() %>% 
+  # # country level
+  # filter(LEVL_CODE == 0) %>% 
+  # select(geo, geometry) 
+
+
+# Countries ---------------------------------------------------------------
+
+temp <- tempfile()
+
+download.file("https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/download/ref-countries-2016-60m.shp.zip",
+              destfile = temp)
+
+temp2 <- tempfile()
+
+unzip(temp, exdir = temp2)
+list.files(temp2)
+
+unzip(temp, exdir = "data/ref-countries-2016-60m")
+
+unzip("data/ref-countries-2016-60m/CNTR_BN_60M_2016_3035.shp.zip",
+      exdir = "data/ref-countries-2016-60m/CNTR_BN_60M_2016_3035")
+
+eu_c_sf <- sf::read_sf("data/ref-countries-2016-60m/CNTR_BN_60M_2016_3035/CNTR_BN_60M_2016_3035.shp")
+
+eu_c_sf %>% 
+  ggplot() +
+  geom_sf()
+
+# plots -------------------------------------------------------------------
 
 maize_prod2 <- 
   maize_prod %>% 
-  full_join(euro_spatial)
+  left_join(euro_spatial, by = c("geo" = "geo"))
   label_eurostat()
 
 maize_prod$strucpro %>% table()
@@ -131,6 +195,7 @@ maize_prod$strucpro %>% table()
 # explore production ------------------------------------------------------
 
 maize_prod %>% 
+  label_eurostat() %>% 
   filter(str_detect(strucpro, "Harvested"),
          !str_detect(geo, "European Union")) %>% 
   mutate(geo = as.character(geo),
@@ -145,6 +210,50 @@ maize_prod %>%
   theme(axis.title = element_text(hjust = 1)) +
   facet_grid(. ~ time)
 
+# scatterplot -------------------------------------------------------------
+
+to_plot <- 
+  maize_prod %>% 
+  label_eurostat() %>% 
+  # filter(time == "2018-01-01") %>% 
+  filter(!str_detect(geo, "European Union")) %>% 
+  mutate(geo = as.character(geo),
+         geo = case_when(str_detect(geo, "Germany") ~ "Germany",
+                         str_detect(geo, "Kosovo") ~ "Kosovo",
+                         TRUE ~ geo)) %>% 
+  spread(strucpro, values) %>% 
+  janitor::clean_names()
+  
+to_plot %>% 
+  ggplot(aes(x = area_cultivation_harvested_production_1000_ha,
+             y = harvested_production_in_eu_standard_humidity_1000_t,
+             colour = geo,
+             size = time,
+             alpha = time)) +
+  geom_point() 
+  scale_y_log10() +
+  scale_x_log10()
+ 
+top_10_18 <-
+  to_plot %>% 
+  filter(time == "2018-01-01") %>% 
+  top_n(10, harvested_production_in_eu_standard_humidity_1000_t) %>% 
+  pull(geo)
+
+to_plot %>% 
+  filter(geo %in% top_10_18) %>%
+  ggplot(aes(x = area_cultivation_harvested_production_1000_ha,
+             y = harvested_production_in_eu_standard_humidity_1000_t,
+             colour = geo,
+             size = time,
+             alpha = time,
+             group = geo)) +
+  geom_point() +
+  geom_line() +
+  scale_y_log10() +
+  scale_x_log10()
+  
+  
 
 # what about shapes? ------------------------------------------------------
 
