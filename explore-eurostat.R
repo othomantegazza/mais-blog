@@ -222,7 +222,9 @@ to_plot <-
                          str_detect(geo, "Kosovo") ~ "Kosovo",
                          TRUE ~ geo)) %>% 
   spread(strucpro, values) %>% 
-  janitor::clean_names()
+  janitor::clean_names() %>% 
+  # 2019 is incomplete
+  filter(time != "2019-01-01")
   
 to_plot %>% 
   ggplot(aes(x = area_cultivation_harvested_production_1000_ha,
@@ -253,7 +255,51 @@ to_plot %>%
   scale_y_log10() +
   scale_x_log10()
   
+y5 <- to_plot$time %>%  unique() %>% sort() %>% tail(5)
+ylast <- to_plot$time %>%  unique() %>% sort() %>% tail(1)
+
+trail <- 
+  to_plot %>% 
+  # select top 10
+  filter(geo %in% top_10_18) %>%
+  # this name is too long
+  mutate(prod_kton = harvested_production_in_eu_standard_humidity_1000_t,
+         area_kha = area_cultivation_harvested_production_1000_ha) %>%
+  group_by(geo) 
+
+trail_prod <- 
+  list(points_10 = trail %>% summarise(med_10 = median(prod_kton)),
+       points_5 = trail %>% filter(time %in% y5) %>% summarise(med_5 = median(prod_kton)),
+       points_1 = trail %>% filter(time == ylast) %>% summarise(var_1 = prod_kton)) %>% 
+  reduce(full_join) %>% 
+  gather(med_10:var_1, key = "key", value = "med_prod") 
   
+
+trail_area <- 
+  list(points_10 = trail %>% summarise(med_10 = median(area_kha)),
+       points_5 = trail %>% filter(time %in% y5) %>% summarise(med_5 = median(area_kha)),
+       points_1 = trail %>% filter(time == ylast) %>% summarise(var_1 = area_kha)) %>% 
+  reduce(full_join) %>% 
+  gather(med_10:var_1, key = "key", value = "med_area")
+
+
+trail_full <- 
+  full_join(trail_prod, trail_area) %>% 
+  mutate(key = case_when(key == "med_10" ~ 1,
+                         key == "med_5" ~ 2,
+                         key == "var_1" ~ 3))
+
+trail_full %>% 
+  ggplot(aes(x = med_area,
+             y = med_prod,
+             colour = geo,
+             group = geo)) +
+  geom_point(aes(size = key,
+                 alpha = key)) +
+  geom_line() +
+  scale_x_log10() +
+  scale_y_log10()
+
 
 # what about shapes? ------------------------------------------------------
 
