@@ -177,12 +177,12 @@ eu_c_sf %>%
 
 # plots -------------------------------------------------------------------
 
-maize_prod2 <- 
-  maize_prod %>% 
-  left_join(euro_spatial, by = c("geo" = "geo"))
-  label_eurostat()
-
-maize_prod$strucpro %>% table()
+# maize_prod2 <- 
+#   maize_prod %>% 
+#   left_join(euro_spatial, by = c("geo" = "geo"))
+#   label_eurostat()
+# 
+# maize_prod$strucpro %>% table()
 
 # Area (cultivation/harvested/production) (1000 ha) 
 # 424 
@@ -232,7 +232,7 @@ to_plot %>%
              colour = geo,
              size = time,
              alpha = time)) +
-  geom_point() 
+  geom_point() +
   scale_y_log10() +
   scale_x_log10()
  
@@ -350,10 +350,77 @@ p <-
   theme_minimal() +
   theme(axis.title = element_text(hjust = 1))
 
-# what about shapes? ------------------------------------------------------
+
+p
+
+# save trail plot? ------------------------------------------------------
 
 png("figures/eu-top10-prod.png",
     width = 2200, height = 1800,
     res = 300)  
 p
 dev.off()
+
+
+# with bezier? ------------------------------------------------------------
+
+# to_bezier <-
+#   trail_full %>% 
+#   gather(med_area:med_prod, key = "prod_area", value = "value") %>% 
+#   # filter(key != 2) %>% 
+#   mutate(key = paste(prod_area, key, sep = "_")) %>% 
+#   select(-prod_area) 
+  # spread(key = key, value = value)
+
+p_bezier <- 
+  trail_full %>% 
+  # the index of the bezier curve is 
+  # given by the rows of the dataframe?
+  arrange(geo, key) %>%  
+  ggplot(aes(x = med_area, 
+             y = med_prod,
+             group = geo)) +
+  geom_bezier(aes(alpha = ..index..,
+                  size = ..index..),
+              colour = "#263A89") +
+  geom_point(data = . %>% 
+               filter(key == 3),
+             size = 5,
+             colour = "#263A89") +
+  geom_text_repel(data = . %>% 
+                    filter(key == 3),
+                  aes(label = geo),
+                  colour = "#263A89",
+                  force = 3,
+                  size = 3,
+                  nudge_y = .1) +
+  # geom_text(aes(label = geo),
+  #           colour = "#263A89",
+  #           nudge_y = .1) +
+  scale_y_log10() +
+  scale_x_log10() +
+  scale_alpha_continuous(trans = "sqrt", guide = FALSE) +
+  scale_size_continuous(guide = FALSE) +
+  # lims(y = c(NA, max()))
+  expand_limits(y = c(0, 20000)) +
+  labs(x = "Harvested area [1000 Ha]",
+       y = "Production [1000 t]",
+       title = "Grain Maize and Corn Cob Mix",
+       subtitle = paste0("Production of top 10 countries of the European area\n",
+                         "Trend: 2017 vs. Median of previous 10 years"),
+       caption = "Data: Eurostat | Plot by @othomn") +
+  theme_minimal() +
+  theme(axis.title = element_text(hjust = 1))
+
+
+p_bezier
+
+
+# save plot bezier --------------------------------------------------------
+
+png("figures/eu-top10-prod-bezier.png",
+    width = 2200, height = 1800,
+    res = 300)  
+p_bezier
+dev.off()
+
